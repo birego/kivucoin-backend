@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String   @id @default(uuid())
+  email    String   @unique
+  password String
+  role     Role     @default(USER)
+  wallet   Wallet?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Wallet {
+  id      String   @id @default(uuid())
+  user    User     @relation(fields: [userId], references: [id])
+  userId  String   @unique
+  balance Float    @default(0.0)
+
+  transactionsFrom Transaction[] @relation("FromWallet")
+  transactionsTo   Transaction[] @relation("ToWallet")
+  emissions        Emission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  fromWallet    Wallet?  @relation("FromWallet", fields: [fromWalletId], references: [id])
+  fromWalletId  String?
+  toWallet      Wallet   @relation("ToWallet", fields: [toWalletId], references: [id])
+  toWalletId    String
+  amount        Float
+  type          TransactionType
+  reason        String?
+
+  createdAt     DateTime @default(now())
+}
+
+model Emission {
+  id         String   @id @default(uuid())
+  toWallet   Wallet   @relation(fields: [toWalletId], references: [id])
+  toWalletId String
+  amount     Float
+  reason     String?
+
+  createdAt  DateTime @default(now())
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum TransactionType {
+  TRANSFER
+  EMISSION
+}
